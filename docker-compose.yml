@@ -1,4 +1,5 @@
 services:
+  # Production build with security features
   app:
     build:
       context: .
@@ -8,10 +9,8 @@ services:
     environment:
       - AWS_REGION=${AWS_REGION:-ap-northeast-1}
       - CONFIG_AGGREGATOR_NAME=${CONFIG_AGGREGATOR_NAME}
-      - AWS_PROFILE=${AWS_PROFILE:-default}
     volumes:
-      # Mount AWS credentials for local development with SSO
-      # This allows using AWS SSO credentials from the host machine
+      # Mount AWS credentials for local testing (read-only)
       - ${HOME}/.aws:/home/nextjs/.aws:ro
     read_only: true
     tmpfs:

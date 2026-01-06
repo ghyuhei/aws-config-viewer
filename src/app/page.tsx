@@ -94,55 +94,59 @@ export default function Home() {
     <main className="container">
       <header className="header">
         <h1>AWS Config Viewer</h1>
-        <p>Search EC2 instances and VPCs across AWS accounts</p>
+        <p>AWS Config を使用して複数アカウントのリソースを横断検索</p>
+        <div className="description">
+          <p>AWS Config Aggregator に記録されているEC2インスタンスとVPCを検索できます。</p>
+          <p>検索条件を指定しない場合は全件表示されます。部分一致検索が可能です。</p>
+        </div>
       </header>
 
       <div className="tabs">
         <button className={`tab ${activeTab === 'ec2' ? 'active' : ''}`} onClick={() => setActiveTab('ec2')}>
-          EC2 Instances
+          EC2 インスタンス
         </button>
         <button className={`tab ${activeTab === 'vpc' ? 'active' : ''}`} onClick={() => setActiveTab('vpc')}>
-          VPCs
+          VPC
         </button>
       </div>
 
       {activeTab === 'ec2' && (
         <>
           <div className="search-form">
-            <SearchInput label="Account ID" value={ec2Search.accountId} onChange={(v) => setEc2Search({ ...ec2Search, accountId: v })} placeholder="123456789012" />
-            <SearchInput label="Region" value={ec2Search.region} onChange={(v) => setEc2Search({ ...ec2Search, region: v })} placeholder="ap-northeast-1" />
-            <SearchInput label="Instance ID" value={ec2Search.instanceId} onChange={(v) => setEc2Search({ ...ec2Search, instanceId: v })} placeholder="i-0123456789" />
-            <SearchInput label="IP Address" value={ec2Search.ipAddress} onChange={(v) => setEc2Search({ ...ec2Search, ipAddress: v })} placeholder="10.0.1.100" />
-            <SearchInput label="Name Tag" value={ec2Search.name} onChange={(v) => setEc2Search({ ...ec2Search, name: v })} placeholder="web-server" />
+            <SearchInput label="アカウントID" value={ec2Search.accountId} onChange={(v) => setEc2Search({ ...ec2Search, accountId: v })} placeholder="123456789012" />
+            <SearchInput label="リージョン" value={ec2Search.region} onChange={(v) => setEc2Search({ ...ec2Search, region: v })} placeholder="ap-northeast-1" />
+            <SearchInput label="インスタンスID" value={ec2Search.instanceId} onChange={(v) => setEc2Search({ ...ec2Search, instanceId: v })} placeholder="i-0123456789" />
+            <SearchInput label="IPアドレス" value={ec2Search.ipAddress} onChange={(v) => setEc2Search({ ...ec2Search, ipAddress: v })} placeholder="10.0.1.100" />
+            <SearchInput label="名前タグ" value={ec2Search.name} onChange={(v) => setEc2Search({ ...ec2Search, name: v })} placeholder="web-server" />
             <div className="button-group">
               <button className="btn btn-primary" onClick={() => search('ec2')} disabled={loading}>
-                {loading ? 'Searching...' : 'Search'}
+                {loading ? '検索中...' : '検索'}
               </button>
-              <button className="btn btn-secondary" onClick={() => setEc2Search(initialEC2Search)}>Clear</button>
+              <button className="btn btn-secondary" onClick={() => setEc2Search(initialEC2Search)}>クリア</button>
             </div>
           </div>
 
           {error && <div className="error">{error}</div>}
 
           {loading ? (
-            <div className="loading"><div className="spinner" />Loading...</div>
+            <div className="loading"><div className="spinner" />検索中...</div>
           ) : ec2Instances.length > 0 ? (
             <>
               <div className="results-header">
-                <span className="results-count">{ec2Instances.length} instance(s) found</span>
+                <span className="results-count">{ec2Instances.length} 件のインスタンスが見つかりました</span>
               </div>
               <div className="table-container">
                 <table>
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Instance ID</th>
-                      <th>Account ID</th>
-                      <th>Region</th>
-                      <th>Type</th>
-                      <th>State</th>
-                      <th>Private IP</th>
-                      <th>Public IP</th>
+                      <th>名前</th>
+                      <th>インスタンスID</th>
+                      <th>アカウントID</th>
+                      <th>リージョン</th>
+                      <th>タイプ</th>
+                      <th>状態</th>
+                      <th>プライベートIP</th>
+                      <th>パブリックIP</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -163,7 +167,7 @@ export default function Home() {
               </div>
             </>
           ) : (
-            <div className="empty">Enter search criteria and click Search to list EC2 instances.</div>
+            <div className="empty">検索条件を入力して「検索」ボタンをクリックすると、EC2インスタンスが表示されます。<br />条件を指定しない場合は全件表示されます。</div>
           )}
         </>
       )}
@@ -171,38 +175,38 @@ export default function Home() {
       {activeTab === 'vpc' && (
         <>
           <div className="search-form">
-            <SearchInput label="Account ID" value={vpcSearch.accountId} onChange={(v) => setVpcSearch({ ...vpcSearch, accountId: v })} placeholder="123456789012" />
-            <SearchInput label="Region" value={vpcSearch.region} onChange={(v) => setVpcSearch({ ...vpcSearch, region: v })} placeholder="ap-northeast-1" />
+            <SearchInput label="アカウントID" value={vpcSearch.accountId} onChange={(v) => setVpcSearch({ ...vpcSearch, accountId: v })} placeholder="123456789012" />
+            <SearchInput label="リージョン" value={vpcSearch.region} onChange={(v) => setVpcSearch({ ...vpcSearch, region: v })} placeholder="ap-northeast-1" />
             <SearchInput label="VPC ID" value={vpcSearch.vpcId} onChange={(v) => setVpcSearch({ ...vpcSearch, vpcId: v })} placeholder="vpc-0123456789" />
-            <SearchInput label="CIDR Block" value={vpcSearch.cidr} onChange={(v) => setVpcSearch({ ...vpcSearch, cidr: v })} placeholder="10.0.0.0/16" />
-            <SearchInput label="Name Tag" value={vpcSearch.name} onChange={(v) => setVpcSearch({ ...vpcSearch, name: v })} placeholder="main-vpc" />
+            <SearchInput label="CIDRブロック" value={vpcSearch.cidr} onChange={(v) => setVpcSearch({ ...vpcSearch, cidr: v })} placeholder="10.0.0.0/16" />
+            <SearchInput label="名前タグ" value={vpcSearch.name} onChange={(v) => setVpcSearch({ ...vpcSearch, name: v })} placeholder="main-vpc" />
             <div className="button-group">
               <button className="btn btn-primary" onClick={() => search('vpc')} disabled={loading}>
-                {loading ? 'Searching...' : 'Search'}
+                {loading ? '検索中...' : '検索'}
               </button>
-              <button className="btn btn-secondary" onClick={() => setVpcSearch(initialVPCSearch)}>Clear</button>
+              <button className="btn btn-secondary" onClick={() => setVpcSearch(initialVPCSearch)}>クリア</button>
             </div>
           </div>
 
           {error && <div className="error">{error}</div>}
 
           {loading ? (
-            <div className="loading"><div className="spinner" />Loading...</div>
+            <div className="loading"><div className="spinner" />検索中...</div>
           ) : vpcs.length > 0 ? (
             <>
               <div className="results-header">
-                <span className="results-count">{vpcs.length} VPC(s) found</span>
+                <span className="results-count">{vpcs.length} 件のVPCが見つかりました</span>
               </div>
               <div className="table-container">
                 <table>
                   <thead>
                     <tr>
-                      <th>Name</th>
+                      <th>名前</th>
                       <th>VPC ID</th>
-                      <th>Account ID</th>
-                      <th>Region</th>
-                      <th>CIDR Block</th>
-                      <th>Default</th>
+                      <th>アカウントID</th>
+                      <th>リージョン</th>
+                      <th>CIDRブロック</th>
+                      <th>デフォルト</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -213,7 +217,7 @@ export default function Home() {
                         <td className="monospace">{v.accountId}</td>
                         <td>{v.region}</td>
                         <td className="monospace">{v.cidrBlock}</td>
-                        <td>{v.isDefault && <span className="badge badge-default">Default</span>}</td>
+                        <td>{v.isDefault && <span className="badge badge-default">デフォルト</span>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -221,7 +225,7 @@ export default function Home() {
               </div>
             </>
           ) : (
-            <div className="empty">Enter search criteria and click Search to list VPCs.</div>
+            <div className="empty">検索条件を入力して「検索」ボタンをクリックすると、VPCが表示されます。<br />条件を指定しない場合は全件表示されます。</div>
           )}
         </>
       )}
