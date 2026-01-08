@@ -227,6 +227,17 @@ th {
   letter-spacing: 0.5px;
 }
 
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+th.sortable:hover {
+  background: var(--input-bg);
+  color: var(--foreground);
+}
+
 tr:hover {
   background: var(--card-bg);
 }

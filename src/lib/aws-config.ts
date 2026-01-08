@@ -14,10 +14,8 @@ export interface EC2Instance {
   region: string;
   instanceId: string;
   privateIpAddress: string;
-  publicIpAddress: string;
   name: string;
   instanceType: string;
-  state: string;
 }
 
 export interface VPC {
@@ -93,9 +91,17 @@ function getNameTag(tags?: Array<{ key: string; value: string }>): string {
   return tags?.find((t) => t.key?.toLowerCase() === 'name')?.value || '';
 }
 
+// 全角英数字を半角に変換
+function toHalfWidth(str: string): string {
+  return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+    return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+  });
+}
+
 function matchesFilter(value: string, filter?: string): boolean {
   if (!filter) return true;
-  return value.toLowerCase().includes(filter.toLowerCase());
+  const normalizedFilter = toHalfWidth(filter).toLowerCase();
+  return value.toLowerCase().includes(normalizedFilter);
 }
 
 export async function queryEC2Instances(params: SearchParams = {}): Promise<EC2Instance[]> {
@@ -105,9 +111,7 @@ export async function queryEC2Instances(params: SearchParams = {}): Promise<EC2I
     .map((data) => {
       const config = parseConfig<{
         privateIpAddress?: string;
-        publicIpAddress?: string;
         instanceType?: string;
-        state?: { name?: string };
       }>(data.configuration);
 
       return {
@@ -115,10 +119,8 @@ export async function queryEC2Instances(params: SearchParams = {}): Promise<EC2I
         region: data.awsRegion,
         instanceId: data.resourceId,
         privateIpAddress: config.privateIpAddress || '',
-        publicIpAddress: config.publicIpAddress || '',
         name: getNameTag(data.tags),
         instanceType: config.instanceType || '',
-        state: config.state?.name || '',
       };
     })
     .filter((i) => {
@@ -126,9 +128,8 @@ export async function queryEC2Instances(params: SearchParams = {}): Promise<EC2I
       if (!matchesFilter(i.region, params.region)) return false;
       if (!matchesFilter(i.instanceId, params.instanceId)) return false;
       if (!matchesFilter(i.name, params.name)) return false;
-      if (!matchesFilter(i.privateIpAddress, params.ipAddress) &&
-          !matchesFilter(i.publicIpAddress, params.ipAddress)) {
-        if (params.ipAddress) return false;
+      if (params.ipAddress && !matchesFilter(i.privateIpAddress, params.ipAddress)) {
+        return false;
       }
       return true;
     });

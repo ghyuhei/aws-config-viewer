@@ -1,16 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 interface EC2Instance {
   accountId: string;
   region: string;
   instanceId: string;
   privateIpAddress: string;
-  publicIpAddress: string;
   name: string;
   instanceType: string;
-  state: string;
 }
 
 interface VPC {
@@ -23,6 +21,8 @@ interface VPC {
 }
 
 type TabType = 'ec2' | 'vpc';
+type SortKey = keyof EC2Instance | keyof VPC;
+type SortOrder = 'asc' | 'desc';
 
 const initialEC2Search = {
   accountId: '',
@@ -48,6 +48,41 @@ export default function Home() {
   const [vpcs, setVpcs] = useState<VPC[]>([]);
   const [ec2Search, setEc2Search] = useState(initialEC2Search);
   const [vpcSearch, setVpcSearch] = useState(initialVPCSearch);
+  const [sortKey, setSortKey] = useState<SortKey>('accountId');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+  const handleSort = useCallback((key: SortKey) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortOrder('asc');
+    }
+  }, [sortKey, sortOrder]);
+
+  const sortedEC2Instances = useMemo(() => {
+    const sorted = [...ec2Instances].sort((a, b) => {
+      const aVal = a[sortKey as keyof EC2Instance] || '';
+      const bVal = b[sortKey as keyof EC2Instance] || '';
+
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [ec2Instances, sortKey, sortOrder]);
+
+  const sortedVPCs = useMemo(() => {
+    const sorted = [...vpcs].sort((a, b) => {
+      const aVal = a[sortKey as keyof VPC] || '';
+      const bVal = b[sortKey as keyof VPC] || '';
+
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [vpcs, sortKey, sortOrder]);
 
   const search = useCallback(async (type: 'ec2' | 'vpc') => {
     setLoading(true);
@@ -130,36 +165,44 @@ export default function Home() {
 
           {loading ? (
             <div className="loading"><div className="spinner" />検索中...</div>
-          ) : ec2Instances.length > 0 ? (
+          ) : sortedEC2Instances.length > 0 ? (
             <>
               <div className="results-header">
-                <span className="results-count">{ec2Instances.length} 件のインスタンスが見つかりました</span>
+                <span className="results-count">{sortedEC2Instances.length} 件のインスタンスが見つかりました</span>
               </div>
               <div className="table-container">
                 <table>
                   <thead>
                     <tr>
-                      <th>名前</th>
-                      <th>インスタンスID</th>
-                      <th>アカウントID</th>
-                      <th>リージョン</th>
-                      <th>タイプ</th>
-                      <th>状態</th>
-                      <th>プライベートIP</th>
-                      <th>パブリックIP</th>
+                      <th className="sortable" onClick={() => handleSort('name')}>
+                        名前 {sortKey === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="sortable" onClick={() => handleSort('instanceId')}>
+                        インスタンスID {sortKey === 'instanceId' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="sortable" onClick={() => handleSort('accountId')}>
+                        アカウントID {sortKey === 'accountId' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="sortable" onClick={() => handleSort('region')}>
+                        リージョン {sortKey === 'region' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="sortable" onClick={() => handleSort('instanceType')}>
+                        タイプ {sortKey === 'instanceType' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="sortable" onClick={() => handleSort('privateIpAddress')}>
+                        プライベートIP {sortKey === 'privateIpAddress' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {ec2Instances.map((i) => (
+                    {sortedEC2Instances.map((i) => (
                       <tr key={`${i.accountId}-${i.instanceId}`}>
                         <td>{i.name || '-'}</td>
                         <td className="monospace">{i.instanceId}</td>
                         <td className="monospace">{i.accountId}</td>
                         <td>{i.region}</td>
                         <td>{i.instanceType}</td>
-                        <td><span className={`badge ${i.state === 'running' ? 'badge-running' : 'badge-stopped'}`}>{i.state}</span></td>
                         <td className="monospace">{i.privateIpAddress || '-'}</td>
-                        <td className="monospace">{i.publicIpAddress || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -192,25 +235,37 @@ export default function Home() {
 
           {loading ? (
             <div className="loading"><div className="spinner" />検索中...</div>
-          ) : vpcs.length > 0 ? (
+          ) : sortedVPCs.length > 0 ? (
             <>
               <div className="results-header">
-                <span className="results-count">{vpcs.length} 件のVPCが見つかりました</span>
+                <span className="results-count">{sortedVPCs.length} 件のVPCが見つかりました</span>
               </div>
               <div className="table-container">
                 <table>
                   <thead>
                     <tr>
-                      <th>名前</th>
-                      <th>VPC ID</th>
-                      <th>アカウントID</th>
-                      <th>リージョン</th>
-                      <th>CIDRブロック</th>
-                      <th>デフォルト</th>
+                      <th className="sortable" onClick={() => handleSort('name')}>
+                        名前 {sortKey === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="sortable" onClick={() => handleSort('vpcId')}>
+                        VPC ID {sortKey === 'vpcId' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="sortable" onClick={() => handleSort('accountId')}>
+                        アカウントID {sortKey === 'accountId' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="sortable" onClick={() => handleSort('region')}>
+                        リージョン {sortKey === 'region' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="sortable" onClick={() => handleSort('cidrBlock')}>
+                        CIDRブロック {sortKey === 'cidrBlock' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="sortable" onClick={() => handleSort('isDefault')}>
+                        デフォルト {sortKey === 'isDefault' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {vpcs.map((v) => (
+                    {sortedVPCs.map((v) => (
                       <tr key={`${v.accountId}-${v.vpcId}`}>
                         <td>{v.name || '-'}</td>
                         <td className="monospace">{v.vpcId}</td>
