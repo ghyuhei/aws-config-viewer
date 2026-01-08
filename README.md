@@ -1,387 +1,88 @@
 # AWS Config Viewer
 
-AWS Config Advanced Query を使用して、複数AWSアカウントのEC2インスタンスとVPCを検索・表示するWebアプリケーション。
+Web application to search and view EC2 instances and VPCs across multiple AWS accounts using AWS Config Advanced Query.
 
-## 機能
+## Features
 
-- **EC2検索**: Account ID, Region, Instance ID, IP Address, Name で部分一致検索
-- **VPC検索**: Account ID, Region, VPC ID, CIDR, Name で部分一致検索
-- 検索条件なしで全件表示可能
-- ダークモードUI
+- **EC2 Search**: Partial match search by Account ID, Region, Instance ID, IP Address, Name
+- **VPC Search**: Partial match search by Account ID, Region, VPC ID, CIDR, Name
+- **Table Sorting**: Click column headers to sort ascending/descending
+- **Full-width Character Support**: Automatically converts full-width to half-width for search
+- Display all resources when no search criteria specified
+- Dark mode UI
 
-## 前提条件
+## Prerequisites
 
-- AWS Config Aggregator が設定済みであること
-- EC2/VPC リソースが AWS Config で記録されていること
-- 適切な IAM 権限（`config:SelectAggregateResourceConfig`）
+- AWS Config Aggregator configured
+- EC2/VPC resources recorded in AWS Config
+- IAM permission: `config:SelectAggregateResourceConfig`
 
-## クイックスタート
+## Quick Start
 
-### 1. 環境変数の設定
+### Environment Variables
 
 ```bash
 cp .env.example .env.local
 ```
 
-`.env.local` を編集して以下を設定:
-- `AWS_REGION`: AWS リージョン（例: `ap-northeast-1`）
-- `CONFIG_AGGREGATOR_NAME`: Config Aggregator 名
-- `AWS_PROFILE`: （オプション）ローカル開発時のSSO プロファイル名
+Edit `.env.local`:
+- `AWS_REGION`: AWS region (e.g., `ap-northeast-1`)
+- `CONFIG_AGGREGATOR_NAME`: Config Aggregator name
+- `AWS_PROFILE`: (Optional) SSO profile for local development
 
-### 2. ローカル実行
+### Development
 
-#### 開発モード
-
-**Node.js直接実行:**
 ```bash
 npm install
 npm run dev
-```
-
-**Docker:**
-```bash
+# or
 docker compose up dev
 ```
 
-http://localhost:3000 でアクセス
+Access http://localhost:3000
 
-#### 本番モード
+### Production
 
-**方法1: npm を使用**
-```bash
-npm install
-npm run build
-npm start
-```
-
-**方法2: standalone ビルドを使用（推奨）**
 ```bash
 npm run build
 node .next/standalone/server.js
-```
-
-**方法3: Docker を使用**
-```bash
-# Dockerイメージをビルド
-docker build -t aws-config-viewer .
-
-# コンテナを起動
-docker run -p 3000:3000 \
-  -e AWS_REGION=ap-northeast-1 \
-  -e CONFIG_AGGREGATOR_NAME=your-aggregator-name \
-  -v ~/.aws:/home/nextjs/.aws:ro \
-  aws-config-viewer
-```
-
-**方法4: Docker Compose を使用**
-```bash
+# or
 docker compose up app
 ```
 
-http://localhost:3000 でアクセス
-
-## プロジェクト構造
+## Project Structure
 
 ```
 aws-config-viewer/
 ├── src/
 │   ├── app/
 │   │   ├── api/
-│   │   │   ├── ec2/route.ts          # EC2 API エンドポイント
-│   │   │   └── vpc/route.ts          # VPC API エンドポイント
-│   │   ├── page.tsx                  # 検索UIコンポーネント
-│   │   ├── layout.tsx                # アプリケーションレイアウト
-│   │   └── globals.css               # グローバルスタイル
+│   │   │   ├── ec2/route.ts          # EC2 API endpoint
+│   │   │   └── vpc/route.ts          # VPC API endpoint
+│   │   ├── page.tsx                  # Search UI
+│   │   ├── layout.tsx                # App layout
+│   │   └── globals.css               # Global styles
 │   └── lib/
-│       └── aws-config.ts             # AWS Config クエリロジック
+│       └── aws-config.ts             # AWS Config query logic
 ├── deploy/
-│   ├── iam-policy.json               # IAM ポリシー定義
-│   └── ecs-task-definition.json      # ECS タスク定義テンプレート
-├── Dockerfile                        # 本番用Dockerイメージ
-├── Dockerfile.dev                    # 開発用Dockerイメージ
-├── docker-compose.yml                # ローカル実行用Docker Compose設定
-├── next.config.js                    # Next.js設定
-├── package.json                      # npm依存関係
-├── tsconfig.json                     # TypeScript設定
-└── .env.example                      # 環境変数テンプレート
+│   ├── iam-policy.json               # IAM policy
+│   └── ecs-task-definition.json      # ECS task definition
+├── Dockerfile                        # Production image
+├── Dockerfile.dev                    # Development image
+└── docker-compose.yml                # Local development
 ```
 
-## カスタマイズガイド
+## Deployment to AWS ECS Fargate
 
-### 検索フィールドの追加
-
-新しい検索条件を追加する場合、以下のファイルを修正します。
-
-#### 1. `src/lib/aws-config.ts` の修正
-
-**a. SearchParams インターフェースに新しいフィールドを追加:**
-
-```typescript
-export interface SearchParams {
-  accountId?: string;
-  region?: string;
-  instanceId?: string;
-  ipAddress?: string;
-  name?: string;
-  newField?: string;  // 追加
-}
-```
-
-**b. クエリ関数のフィルタロジックに条件を追加:**
-
-```typescript
-export async function queryEC2Instances(params: SearchParams = {}): Promise<EC2Instance[]> {
-  // ... 既存のコード ...
-  .filter((i) => {
-    if (!matchesFilter(i.accountId, params.accountId)) return false;
-    if (!matchesFilter(i.region, params.region)) return false;
-    if (!matchesFilter(i.instanceId, params.instanceId)) return false;
-    if (!matchesFilter(i.name, params.name)) return false;
-    if (!matchesFilter(i.newField, params.newField)) return false;  // 追加
-    // ...
-  });
-}
-```
-
-#### 2. `src/app/api/ec2/route.ts` または `vpc/route.ts` の修正
-
-**パラメータ配列に新しいフィールド名を追加:**
-
-```typescript
-export async function GET(request: NextRequest) {
-  // ...
-  ['accountId', 'region', 'instanceId', 'ipAddress', 'name', 'newField'].forEach((key) => {
-    const value = sp.get(key);
-    if (value) params[key as keyof SearchParams] = value;
-  });
-  // ...
-}
-```
-
-#### 3. `src/app/page.tsx` の修正
-
-**a. 検索状態の初期値に追加:**
-
-```typescript
-const initialEC2Search = {
-  accountId: '',
-  region: '',
-  instanceId: '',
-  ipAddress: '',
-  name: '',
-  newField: '',  // 追加
-};
-```
-
-**b. 検索フォームに入力フィールドを追加:**
-
-```typescript
-<SearchInput
-  label="New Field"
-  value={ec2Search.newField}
-  onChange={(v) => setEc2Search({ ...ec2Search, newField: v })}
-  placeholder="Enter new field"
-/>
-```
-
-**c. テーブルにカラムを追加（必要に応じて）:**
-
-```typescript
-<thead>
-  <tr>
-    <th>Name</th>
-    <th>New Field</th>  {/* 追加 */}
-    {/* ... */}
-  </tr>
-</thead>
-<tbody>
-  {ec2Instances.map((i) => (
-    <tr key={`${i.accountId}-${i.instanceId}`}>
-      <td>{i.name || '-'}</td>
-      <td>{i.newField || '-'}</td>  {/* 追加 */}
-      {/* ... */}
-    </tr>
-  ))}
-</tbody>
-```
-
-### 新しいリソースタイプの追加（例: RDS）
-
-新しいAWSリソースタイプを追加する場合の手順：
-
-#### 1. `src/lib/aws-config.ts` の修正
-
-**a. インターフェース定義を追加:**
-
-```typescript
-export interface RDSInstance {
-  accountId: string;
-  region: string;
-  dbInstanceId: string;
-  dbInstanceClass: string;
-  engine: string;
-  name: string;
-}
-```
-
-**b. クエリ関数を追加:**
-
-```typescript
-export async function queryRDSInstances(params: SearchParams = {}): Promise<RDSInstance[]> {
-  const results = await executeQuery('AWS::RDS::DBInstance');
-
-  return results
-    .map((data) => {
-      const config = parseConfig<{
-        dBInstanceClass?: string;
-        engine?: string;
-      }>(data.configuration);
-
-      return {
-        accountId: data.accountId,
-        region: data.awsRegion,
-        dbInstanceId: data.resourceId,
-        dbInstanceClass: config.dBInstanceClass || '',
-        engine: config.engine || '',
-        name: getNameTag(data.tags),
-      };
-    })
-    .filter((db) => {
-      if (!matchesFilter(db.accountId, params.accountId)) return false;
-      if (!matchesFilter(db.region, params.region)) return false;
-      if (!matchesFilter(db.dbInstanceId, params.instanceId)) return false;
-      if (!matchesFilter(db.name, params.name)) return false;
-      return true;
-    });
-}
-```
-
-#### 2. `src/app/api/rds/route.ts` を新規作成
-
-```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { queryRDSInstances, type SearchParams } from '@/lib/aws-config';
-
-export async function GET(request: NextRequest) {
-  try {
-    const sp = request.nextUrl.searchParams;
-    const params: SearchParams = {};
-
-    ['accountId', 'region', 'instanceId', 'name'].forEach((key) => {
-      const value = sp.get(key);
-      if (value) params[key as keyof SearchParams] = value;
-    });
-
-    const data = await queryRDSInstances(params);
-    return NextResponse.json({ success: true, count: data.length, data });
-  } catch (error) {
-    console.error('RDS query error:', error);
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
-  }
-}
-```
-
-#### 3. `src/app/page.tsx` の修正
-
-**a. インターフェースを追加:**
-
-```typescript
-interface RDSInstance {
-  accountId: string;
-  region: string;
-  dbInstanceId: string;
-  dbInstanceClass: string;
-  engine: string;
-  name: string;
-}
-```
-
-**b. タブタイプを更新:**
-
-```typescript
-type TabType = 'ec2' | 'vpc' | 'rds';  // 'rds'を追加
-```
-
-**c. 状態と初期値を追加:**
-
-```typescript
-const [rdsInstances, setRdsInstances] = useState<RDSInstance[]>([]);
-const [rdsSearch, setRdsSearch] = useState({
-  accountId: '',
-  region: '',
-  instanceId: '',
-  name: '',
-});
-```
-
-**d. search関数を更新:**
-
-```typescript
-const search = useCallback(async (type: 'ec2' | 'vpc' | 'rds') => {
-  // ...
-  const searchParams =
-    type === 'ec2' ? ec2Search :
-    type === 'vpc' ? vpcSearch :
-    rdsSearch;
-  // ...
-  if (data.success) {
-    if (type === 'ec2') setEc2Instances(data.data);
-    else if (type === 'vpc') setVpcs(data.data);
-    else setRdsInstances(data.data);
-  }
-}, [ec2Search, vpcSearch, rdsSearch]);
-```
-
-**e. タブとUIを追加:**
-
-```typescript
-<div className="tabs">
-  <button className={`tab ${activeTab === 'ec2' ? 'active' : ''}`} onClick={() => setActiveTab('ec2')}>
-    EC2 Instances
-  </button>
-  <button className={`tab ${activeTab === 'vpc' ? 'active' : ''}`} onClick={() => setActiveTab('vpc')}>
-    VPCs
-  </button>
-  <button className={`tab ${activeTab === 'rds' ? 'active' : ''}`} onClick={() => setActiveTab('rds')}>
-    RDS
-  </button>
-</div>
-
-{/* タブコンテンツを追加（EC2/VPCタブを参考に実装） */}
-```
-
-### スタイルの変更
-
-`src/app/globals.css` の CSS 変数を編集してテーマをカスタマイズ:
-
-```css
-:root {
-  --background: #0a0a0a;       /* 背景色 */
-  --foreground: #ededed;       /* テキスト色 */
-  --primary: #3b82f6;          /* プライマリカラー */
-  --primary-hover: #2563eb;    /* ホバー時のプライマリカラー */
-  --border: #333;              /* ボーダー色 */
-  --card-bg: #111;             /* カード背景色 */
-  --input-bg: #1a1a1a;         /* 入力欄背景色 */
-}
-```
-
-## デプロイ
-
-### AWS ECS Fargate へのデプロイ
-
-#### 1. IAM ロール作成
+### 1. Create IAM Role
 
 ```bash
-# IAMポリシーを作成
+# Create policy
 aws iam create-policy \
   --policy-name aws-config-viewer-policy \
   --policy-document file://deploy/iam-policy.json
 
-# タスクロールを作成
+# Create task role
 aws iam create-role \
   --role-name aws-config-viewer-task-role \
   --assume-role-policy-document '{
@@ -393,40 +94,35 @@ aws iam create-role \
     }]
   }'
 
-# ポリシーをアタッチ
+# Attach policy
 aws iam attach-role-policy \
   --role-name aws-config-viewer-task-role \
-  --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/aws-config-viewer-policy
+  --policy-arn arn:aws:iam::ACCOUNT_ID:policy/aws-config-viewer-policy
 ```
 
-#### 2. ECR にイメージをプッシュ
+### 2. Build and Push Image
 
 ```bash
-# ECR リポジトリ作成
 aws ecr create-repository --repository-name aws-config-viewer
 
-# ECR ログイン
 aws ecr get-login-password --region ap-northeast-1 | \
-  docker login --username AWS --password-stdin YOUR_ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com
+  docker login --username AWS --password-stdin ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com
 
-# イメージビルド & プッシュ
 docker build -t aws-config-viewer .
-docker tag aws-config-viewer:latest YOUR_ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com/aws-config-viewer:latest
-docker push YOUR_ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com/aws-config-viewer:latest
+docker tag aws-config-viewer:latest ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com/aws-config-viewer:latest
+docker push ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com/aws-config-viewer:latest
 ```
 
-#### 3. ECS タスク定義の登録
+### 3. Register Task Definition
 
-`deploy/ecs-task-definition.json` を編集:
-- `YOUR_ACCOUNT_ID` を実際のアカウントIDに置換
-- `YOUR_REGION` を使用するリージョンに置換
-- `YOUR_AGGREGATOR_NAME` を Config Aggregator 名に置換
+Edit `deploy/ecs-task-definition.json`:
+- Replace `YOUR_ACCOUNT_ID`, `YOUR_REGION`, `YOUR_AGGREGATOR_NAME`
 
 ```bash
 aws ecs register-task-definition --cli-input-json file://deploy/ecs-task-definition.json
 ```
 
-#### 4. ECS サービスの作成
+### 4. Create ECS Service
 
 ```bash
 aws ecs create-service \
@@ -438,23 +134,9 @@ aws ecs create-service \
   --network-configuration "awsvpcConfiguration={subnets=[subnet-xxx],securityGroups=[sg-xxx],assignPublicIp=ENABLED}"
 ```
 
-### 推奨ネットワーク構成
+## Security
 
-```
-Internet → ALB (HTTPS/443) → ECS Fargate (port 3000)
-             ↓
-      ACM Certificate
-```
-
-- **ALB**: パブリックサブネット、HTTPS のみ許可
-- **ECS**: プライベートサブネット（NAT Gateway 経由でAWS API にアクセス）
-- **セキュリティグループ**: ALB → ECS の 3000 番ポートのみ許可
-
-## セキュリティ
-
-### 必要な IAM 権限
-
-アプリケーションに必要な最小権限（`deploy/iam-policy.json` 参照）:
+### Required IAM Policy
 
 ```json
 {
@@ -467,47 +149,25 @@ Internet → ALB (HTTPS/443) → ECS Fargate (port 3000)
 }
 ```
 
-### コンテナセキュリティ
+### Container Security
 
-本番用 Docker イメージには以下のセキュリティ機能が実装されています:
+- Non-root user (UID 1001: nextjs)
+- Read-only root filesystem
+- `no-new-privileges` flag
+- `/tmp` only writable via tmpfs
 
-- 非rootユーザー（UID 1001: nextjs）で実行
-- 読み取り専用ルートファイルシステム
-- `no-new-privileges` 設定
-- `/tmp` のみ tmpfs でマウント（書き込み可能）
+### Recommended Network Configuration
 
-## トラブルシューティング
+```
+Internet → ALB (HTTPS/443) → ECS Fargate (port 3000)
+             ↓
+      ACM Certificate
+```
 
-### AWS 認証エラー
+- ALB: Public subnet, HTTPS only
+- ECS: Private subnet with NAT Gateway
+- Security Group: Allow ALB → ECS on port 3000 only
 
-**エラー**: `Unable to locate credentials`
-
-**対処**:
-- ローカル開発: `.env.local` で `AWS_PROFILE` を設定
-- Docker: AWS 認証情報が `~/.aws` にあることを確認
-- ECS: タスクロールが正しく設定されていることを確認
-
-### Config Aggregator が見つからない
-
-**エラー**: `NoSuchConfigurationAggregatorException`
-
-**対処**:
-- `CONFIG_AGGREGATOR_NAME` が正しく設定されていることを確認
-- AWS Config で Aggregator が作成されていることを確認
-- 使用しているリージョンが正しいことを確認（Aggregator は特定のリージョンに作成される）
-
-### 検索結果が空
-
-**考えられる原因**:
-- AWS Config でリソースが記録されていない
-- 検索条件が厳しすぎる
-- IAM 権限が不足している
-
-**対処**:
-- AWS Config コンソールでリソースが記録されていることを確認
-- 検索条件をクリアして全件検索を試す
-- IAM ポリシーで `config:SelectAggregateResourceConfig` 権限があることを確認
-
-## ライセンス
+## License
 
 MIT
