@@ -27,6 +27,61 @@ export interface VPC {
   isDefault: boolean;
 }
 
+export interface RDSInstance {
+  accountId: string;
+  region: string;
+  dbInstanceId: string;
+  dbInstanceClass: string;
+  engine: string;
+  name: string;
+}
+
+export interface LambdaFunction {
+  accountId: string;
+  region: string;
+  functionName: string;
+  runtime: string;
+  memorySize: number;
+  lastModified: string;
+}
+
+export interface LoadBalancer {
+  accountId: string;
+  region: string;
+  loadBalancerName: string;
+  type: string;
+  dnsName: string;
+  scheme: string;
+}
+
+export interface NetworkInterface {
+  accountId: string;
+  region: string;
+  networkInterfaceId: string;
+  privateIpAddress: string;
+  subnetId: string;
+  vpcId: string;
+  description: string;
+  status: string;
+}
+
+export interface SESIdentity {
+  accountId: string;
+  region: string;
+  identityName: string;
+  identityType: string;
+  verificationStatus: string;
+}
+
+export interface CloudFrontDistribution {
+  accountId: string;
+  region: string;
+  distributionId: string;
+  domainName: string;
+  status: string;
+  enabled: boolean;
+}
+
 export interface SearchParams {
   accountId?: string;
   region?: string;
@@ -35,6 +90,14 @@ export interface SearchParams {
   vpcId?: string;
   cidr?: string;
   name?: string;
+  dbInstanceId?: string;
+  functionName?: string;
+  loadBalancerName?: string;
+  networkInterfaceId?: string;
+  subnetId?: string;
+  identityName?: string;
+  distributionId?: string;
+  domainName?: string;
 }
 
 interface RawResource {
@@ -160,6 +223,183 @@ export async function queryVPCs(params: SearchParams = {}): Promise<VPC[]> {
       if (!matchesFilter(v.vpcId, params.vpcId)) return false;
       if (!matchesFilter(v.cidrBlock, params.cidr)) return false;
       if (!matchesFilter(v.name, params.name)) return false;
+      return true;
+    });
+}
+
+export async function queryRDSInstances(params: SearchParams = {}): Promise<RDSInstance[]> {
+  const results = await executeQuery('AWS::RDS::DBInstance');
+
+  return results
+    .map((data) => {
+      const config = parseConfig<{
+        dBInstanceClass?: string;
+        engine?: string;
+      }>(data.configuration);
+
+      return {
+        accountId: data.accountId,
+        region: data.awsRegion,
+        dbInstanceId: data.resourceId,
+        dbInstanceClass: config.dBInstanceClass || '',
+        engine: config.engine || '',
+        name: getNameTag(data.tags),
+      };
+    })
+    .filter((db) => {
+      if (!matchesFilter(db.accountId, params.accountId)) return false;
+      if (!matchesFilter(db.region, params.region)) return false;
+      if (!matchesFilter(db.dbInstanceId, params.dbInstanceId)) return false;
+      if (!matchesFilter(db.name, params.name)) return false;
+      return true;
+    });
+}
+
+export async function queryLambdaFunctions(params: SearchParams = {}): Promise<LambdaFunction[]> {
+  const results = await executeQuery('AWS::Lambda::Function');
+
+  return results
+    .map((data) => {
+      const config = parseConfig<{
+        functionName?: string;
+        runtime?: string;
+        memorySize?: number;
+        lastModified?: string;
+      }>(data.configuration);
+
+      return {
+        accountId: data.accountId,
+        region: data.awsRegion,
+        functionName: config.functionName || data.resourceId,
+        runtime: config.runtime || '',
+        memorySize: config.memorySize || 0,
+        lastModified: config.lastModified || '',
+      };
+    })
+    .filter((fn) => {
+      if (!matchesFilter(fn.accountId, params.accountId)) return false;
+      if (!matchesFilter(fn.region, params.region)) return false;
+      if (!matchesFilter(fn.functionName, params.functionName)) return false;
+      return true;
+    });
+}
+
+export async function queryLoadBalancers(params: SearchParams = {}): Promise<LoadBalancer[]> {
+  const results = await executeQuery('AWS::ElasticLoadBalancingV2::LoadBalancer');
+
+  return results
+    .map((data) => {
+      const config = parseConfig<{
+        loadBalancerName?: string;
+        type?: string;
+        dNSName?: string;
+        scheme?: string;
+      }>(data.configuration);
+
+      return {
+        accountId: data.accountId,
+        region: data.awsRegion,
+        loadBalancerName: config.loadBalancerName || data.resourceId,
+        type: config.type || '',
+        dnsName: config.dNSName || '',
+        scheme: config.scheme || '',
+      };
+    })
+    .filter((lb) => {
+      if (!matchesFilter(lb.accountId, params.accountId)) return false;
+      if (!matchesFilter(lb.region, params.region)) return false;
+      if (!matchesFilter(lb.loadBalancerName, params.loadBalancerName)) return false;
+      return true;
+    });
+}
+
+export async function queryNetworkInterfaces(params: SearchParams = {}): Promise<NetworkInterface[]> {
+  const results = await executeQuery('AWS::EC2::NetworkInterface');
+
+  return results
+    .map((data) => {
+      const config = parseConfig<{
+        privateIpAddress?: string;
+        subnetId?: string;
+        vpcId?: string;
+        description?: string;
+        status?: string;
+      }>(data.configuration);
+
+      return {
+        accountId: data.accountId,
+        region: data.awsRegion,
+        networkInterfaceId: data.resourceId,
+        privateIpAddress: config.privateIpAddress || '',
+        subnetId: config.subnetId || '',
+        vpcId: config.vpcId || '',
+        description: config.description || '',
+        status: config.status || '',
+      };
+    })
+    .filter((eni) => {
+      if (!matchesFilter(eni.accountId, params.accountId)) return false;
+      if (!matchesFilter(eni.region, params.region)) return false;
+      if (!matchesFilter(eni.networkInterfaceId, params.networkInterfaceId)) return false;
+      if (!matchesFilter(eni.subnetId, params.subnetId)) return false;
+      if (!matchesFilter(eni.vpcId, params.vpcId)) return false;
+      if (params.ipAddress && !matchesFilter(eni.privateIpAddress, params.ipAddress)) {
+        return false;
+      }
+      return true;
+    });
+}
+
+export async function querySESIdentities(params: SearchParams = {}): Promise<SESIdentity[]> {
+  const results = await executeQuery('AWS::SES::ConfigurationSet');
+
+  return results
+    .map((data) => {
+      const config = parseConfig<{
+        name?: string;
+      }>(data.configuration);
+
+      return {
+        accountId: data.accountId,
+        region: data.awsRegion,
+        identityName: config.name || data.resourceId,
+        identityType: 'ConfigurationSet',
+        verificationStatus: 'N/A',
+      };
+    })
+    .filter((ses) => {
+      if (!matchesFilter(ses.accountId, params.accountId)) return false;
+      if (!matchesFilter(ses.region, params.region)) return false;
+      if (!matchesFilter(ses.identityName, params.identityName)) return false;
+      return true;
+    });
+}
+
+export async function queryCloudFrontDistributions(params: SearchParams = {}): Promise<CloudFrontDistribution[]> {
+  const results = await executeQuery('AWS::CloudFront::Distribution');
+
+  return results
+    .map((data) => {
+      const config = parseConfig<{
+        domainName?: string;
+        status?: string;
+        enabled?: boolean;
+      }>(data.configuration);
+
+      return {
+        accountId: data.accountId,
+        region: data.awsRegion,
+        distributionId: data.resourceId,
+        domainName: config.domainName || '',
+        status: config.status || '',
+        enabled: config.enabled ?? false,
+      };
+    })
+    .filter((cf) => {
+      if (!matchesFilter(cf.accountId, params.accountId)) return false;
+      if (!matchesFilter(cf.region, params.region)) return false;
+      if (!matchesFilter(cf.distributionId, params.distributionId)) return false;
+      if (!matchesFilter(cf.domainName, params.domainName)) return false;
       return true;
     });
 }

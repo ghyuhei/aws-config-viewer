@@ -1,11 +1,17 @@
 # AWS Config Viewer
 
-Web application to search and view EC2 instances and VPCs across multiple AWS accounts using AWS Config Advanced Query.
+Web application to search and view AWS resources across multiple accounts using AWS Config Advanced Query.
 
 ## Features
 
 - **EC2 Search**: Partial match search by Account ID, Region, Instance ID, IP Address, Name
 - **VPC Search**: Partial match search by Account ID, Region, VPC ID, CIDR, Name
+- **RDS Search**: Partial match search by Account ID, Region, DB Instance ID, Name
+- **Lambda Search**: Partial match search by Account ID, Region, Function Name
+- **Load Balancer Search**: Partial match search by Account ID, Region, Load Balancer Name
+- **Network Interface Search**: Partial match search by Account ID, Region, ENI ID, IP Address, Subnet ID, VPC ID
+- **SES Search**: Partial match search by Account ID, Region, Identity Name
+- **CloudFront Search**: Partial match search by Account ID, Region, Distribution ID, Domain Name
 - **Table Sorting**: Click column headers to sort ascending/descending
 - **Full-width Character Support**: Automatically converts full-width to half-width for search
 - Display all resources when no search criteria specified
@@ -14,7 +20,7 @@ Web application to search and view EC2 instances and VPCs across multiple AWS ac
 ## Prerequisites
 
 - AWS Config Aggregator configured
-- EC2/VPC resources recorded in AWS Config
+- AWS resources (EC2, VPC, RDS, Lambda, Load Balancers, Network Interfaces, SES, CloudFront) recorded in AWS Config
 - IAM permission: `config:SelectAggregateResourceConfig`
 
 ## Quick Start
@@ -58,7 +64,13 @@ aws-config-viewer/
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── ec2/route.ts          # EC2 API endpoint
-│   │   │   └── vpc/route.ts          # VPC API endpoint
+│   │   │   ├── vpc/route.ts          # VPC API endpoint
+│   │   │   ├── rds/route.ts          # RDS API endpoint
+│   │   │   ├── lambda/route.ts       # Lambda API endpoint
+│   │   │   ├── lb/route.ts           # Load Balancer API endpoint
+│   │   │   ├── eni/route.ts          # Network Interface API endpoint
+│   │   │   ├── ses/route.ts          # SES API endpoint
+│   │   │   └── cloudfront/route.ts   # CloudFront API endpoint
 │   │   ├── page.tsx                  # Search UI
 │   │   ├── layout.tsx                # App layout
 │   │   └── globals.css               # Global styles

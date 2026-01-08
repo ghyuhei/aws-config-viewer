@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'AWS Config Viewer',
-  description: 'Search EC2 instances and VPCs across multiple AWS accounts using AWS Config',
+  description: 'Search EC2, VPC, RDS, Lambda, Load Balancer, Network Interface, SES, and CloudFront resources across multiple AWS accounts using AWS Config',
 };
 
 export default function RootLayout({
