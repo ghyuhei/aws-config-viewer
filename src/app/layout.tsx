@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AWS Config Viewer - リソース横断検索',
-  description: 'AWS Config を使用して複数アカウントのEC2インスタンスとVPCを横断検索',
+  title: 'AWS Config Viewer',
+  description: 'Search EC2 instances and VPCs across multiple AWS accounts using AWS Config',
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ja">
+    <html lang="en">
       <body>{children}</body>
     </html>
   );
