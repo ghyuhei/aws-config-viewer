@@ -65,21 +65,22 @@ export interface NetworkInterface {
   status: string;
 }
 
-export interface SESIdentity {
+export interface S3Bucket {
   accountId: string;
   region: string;
-  identityName: string;
-  identityType: string;
-  verificationStatus: string;
+  bucketName: string;
+  creationDate: string;
+  versioning: string;
+  encryption: string;
 }
 
-export interface CloudFrontDistribution {
+export interface IAMUser {
   accountId: string;
   region: string;
-  distributionId: string;
-  domainName: string;
-  status: string;
-  enabled: boolean;
+  userName: string;
+  userId: string;
+  arn: string;
+  createDate: string;
 }
 
 export interface SearchParams {
@@ -95,9 +96,8 @@ export interface SearchParams {
   loadBalancerName?: string;
   networkInterfaceId?: string;
   subnetId?: string;
-  identityName?: string;
-  distributionId?: string;
-  domainName?: string;
+  bucketName?: string;
+  userName?: string;
 }
 
 interface RawResource {
@@ -350,56 +350,71 @@ export async function queryNetworkInterfaces(params: SearchParams = {}): Promise
     });
 }
 
-export async function querySESIdentities(params: SearchParams = {}): Promise<SESIdentity[]> {
-  const results = await executeQuery('AWS::SES::ConfigurationSet');
+export async function queryS3Buckets(params: SearchParams = {}): Promise<S3Bucket[]> {
+  const results = await executeQuery('AWS::S3::Bucket');
 
   return results
     .map((data) => {
       const config = parseConfig<{
         name?: string;
+        creationDate?: string;
+        versioningConfiguration?: {
+          status?: string;
+        };
+        serverSideEncryptionConfiguration?: {
+          rules?: Array<{
+            applyServerSideEncryptionByDefault?: {
+              sSEAlgorithm?: string;
+            };
+          }>;
+        };
       }>(data.configuration);
+
+      const versioningStatus = config.versioningConfiguration?.status || 'Disabled';
+      const encryption = config.serverSideEncryptionConfiguration?.rules?.[0]?.applyServerSideEncryptionByDefault?.sSEAlgorithm || 'None';
 
       return {
         accountId: data.accountId,
         region: data.awsRegion,
-        identityName: config.name || data.resourceId,
-        identityType: 'ConfigurationSet',
-        verificationStatus: 'N/A',
+        bucketName: config.name || data.resourceId,
+        creationDate: config.creationDate || '',
+        versioning: versioningStatus,
+        encryption: encryption,
       };
     })
-    .filter((ses) => {
-      if (!matchesFilter(ses.accountId, params.accountId)) return false;
-      if (!matchesFilter(ses.region, params.region)) return false;
-      if (!matchesFilter(ses.identityName, params.identityName)) return false;
+    .filter((bucket) => {
+      if (!matchesFilter(bucket.accountId, params.accountId)) return false;
+      if (!matchesFilter(bucket.region, params.region)) return false;
+      if (!matchesFilter(bucket.bucketName, params.bucketName)) return false;
       return true;
     });
 }
 
-export async function queryCloudFrontDistributions(params: SearchParams = {}): Promise<CloudFrontDistribution[]> {
-  const results = await executeQuery('AWS::CloudFront::Distribution');
+export async function queryIAMUsers(params: SearchParams = {}): Promise<IAMUser[]> {
+  const results = await executeQuery('AWS::IAM::User');
 
   return results
     .map((data) => {
       const config = parseConfig<{
-        domainName?: string;
-        status?: string;
-        enabled?: boolean;
+        userName?: string;
+        userId?: string;
+        arn?: string;
+        createDate?: string;
       }>(data.configuration);
 
       return {
         accountId: data.accountId,
         region: data.awsRegion,
-        distributionId: data.resourceId,
-        domainName: config.domainName || '',
-        status: config.status || '',
-        enabled: config.enabled ?? false,
+        userName: config.userName || data.resourceId,
+        userId: config.userId || '',
+        arn: config.arn || '',
+        createDate: config.createDate || '',
       };
     })
-    .filter((cf) => {
-      if (!matchesFilter(cf.accountId, params.accountId)) return false;
-      if (!matchesFilter(cf.region, params.region)) return false;
-      if (!matchesFilter(cf.distributionId, params.distributionId)) return false;
-      if (!matchesFilter(cf.domainName, params.domainName)) return false;
+    .filter((user) => {
+      if (!matchesFilter(user.accountId, params.accountId)) return false;
+      if (!matchesFilter(user.region, params.region)) return false;
+      if (!matchesFilter(user.userName, params.userName)) return false;
       return true;
     });
 }
