@@ -80,9 +80,8 @@ export interface IAMUser {
   userName: string;
   userId: string;
   arn: string;
+  path: string;
   createDate: string;
-  hasAccessKey: string;
-  passwordLastUsed: string;
 }
 
 export interface SearchParams {
@@ -401,14 +400,9 @@ export async function queryIAMUsers(params: SearchParams = {}): Promise<IAMUser[
         userName?: string;
         userId?: string;
         arn?: string;
+        path?: string;
         createDate?: string;
-        passwordLastUsed?: string;
-        accessKeyMetadata?: Array<{ status?: string }>;
       }>(data.configuration);
-
-      const hasAccessKey = config.accessKeyMetadata && config.accessKeyMetadata.length > 0
-        ? config.accessKeyMetadata.some(key => key.status === 'Active') ? 'Active' : 'Inactive'
-        : 'None';
 
       return {
         accountId: data.accountId,
@@ -416,9 +410,8 @@ export async function queryIAMUsers(params: SearchParams = {}): Promise<IAMUser[
         userName: config.userName || data.resourceId,
         userId: config.userId || '',
         arn: config.arn || '',
+        path: config.path || '/',
         createDate: config.createDate || '',
-        hasAccessKey: hasAccessKey,
-        passwordLastUsed: config.passwordLastUsed || 'Never',
       };
     })
     .filter((user) => {
