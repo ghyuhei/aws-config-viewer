@@ -75,6 +75,8 @@ interface IAMUser {
   arn: string;
   path: string;
   createDate: string;
+  hasAccessKey: string;
+  passwordLastUsed: string;
 }
 
 type TabType = 'ec2' | 'vpc' | 'rds' | 'lambda' | 'lb' | 'eni' | 's3' | 'iam';
@@ -1081,6 +1083,12 @@ export default function Home() {
                       <th className="sortable" onClick={() => handleSort('createDate')}>
                         Create Date {sortKey === 'createDate' && (sortOrder === 'asc' ? '↑' : '↓')}
                       </th>
+                      <th className="sortable" onClick={() => handleSort('hasAccessKey')}>
+                        Access Key {sortKey === 'hasAccessKey' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="sortable" onClick={() => handleSort('passwordLastUsed')}>
+                        Password Last Used {sortKey === 'passwordLastUsed' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1092,6 +1100,8 @@ export default function Home() {
                         <td>{user.path}</td>
                         <td className="monospace">{user.arn}</td>
                         <td>{user.createDate}</td>
+                        <td>{user.hasAccessKey}</td>
+                        <td>{user.passwordLastUsed}</td>
                       </tr>
                     ))}
                   </tbody>

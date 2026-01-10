@@ -2,6 +2,11 @@ import {
   ConfigServiceClient,
   SelectAggregateResourceConfigCommand,
 } from '@aws-sdk/client-config-service';
+import {
+  IAMClient,
+  ListAccessKeysCommand,
+  GetUserCommand,
+} from '@aws-sdk/client-iam';
 
 const client = new ConfigServiceClient({
   region: process.env.AWS_REGION || 'ap-northeast-1',
@@ -82,6 +87,8 @@ export interface IAMUser {
   arn: string;
   path: string;
   createDate: string;
+  hasAccessKey: string;
+  passwordLastUsed: string;
 }
 
 export interface SearchParams {
@@ -391,33 +398,90 @@ export async function queryS3Buckets(params: SearchParams = {}): Promise<S3Bucke
     });
 }
 
+async function getIAMUserDetails(userName: string, accountId: string): Promise<{
+  hasAccessKey: string;
+  passwordLastUsed: string;
+}> {
+  try {
+    const iamClient = new IAMClient({ region: 'us-east-1' }); // IAM is global, use any region
+
+    // Get access keys
+    let hasAccessKey = 'None';
+    try {
+      const accessKeysResponse = await iamClient.send(
+        new ListAccessKeysCommand({ UserName: userName })
+      );
+      if (accessKeysResponse.AccessKeyMetadata && accessKeysResponse.AccessKeyMetadata.length > 0) {
+        const hasActive = accessKeysResponse.AccessKeyMetadata.some(
+          key => key.Status === 'Active'
+        );
+        hasAccessKey = hasActive ? 'Active' : 'Inactive';
+      }
+    } catch (error) {
+      // If we can't get access keys, mark as unknown
+      hasAccessKey = 'Unknown';
+    }
+
+    // Get password last used
+    let passwordLastUsed = 'Never';
+    try {
+      const userResponse = await iamClient.send(
+        new GetUserCommand({ UserName: userName })
+      );
+      if (userResponse.User?.PasswordLastUsed) {
+        passwordLastUsed = userResponse.User.PasswordLastUsed.toISOString();
+      }
+    } catch (error) {
+      // If we can't get user details, mark as unknown
+      passwordLastUsed = 'Unknown';
+    }
+
+    return { hasAccessKey, passwordLastUsed };
+  } catch (error) {
+    // If IAM API fails completely, return defaults
+    return { hasAccessKey: 'Unknown', passwordLastUsed: 'Unknown' };
+  }
+}
+
 export async function queryIAMUsers(params: SearchParams = {}): Promise<IAMUser[]> {
   const results = await executeQuery('AWS::IAM::User');
 
-  return results
-    .map((data) => {
-      const config = parseConfig<{
-        userName?: string;
-        userId?: string;
-        arn?: string;
-        path?: string;
-        createDate?: string;
-      }>(data.configuration);
+  const baseUsers = results.map((data) => {
+    const config = parseConfig<{
+      userName?: string;
+      userId?: string;
+      arn?: string;
+      path?: string;
+      createDate?: string;
+    }>(data.configuration);
 
+    return {
+      accountId: data.accountId,
+      region: data.awsRegion,
+      userName: config.userName || data.resourceId,
+      userId: config.userId || '',
+      arn: config.arn || '',
+      path: config.path || '/',
+      createDate: config.createDate || '',
+    };
+  });
+
+  // Enrich with IAM API data
+  const enrichedUsers = await Promise.all(
+    baseUsers.map(async (user) => {
+      const iamDetails = await getIAMUserDetails(user.userName, user.accountId);
       return {
-        accountId: data.accountId,
-        region: data.awsRegion,
-        userName: config.userName || data.resourceId,
-        userId: config.userId || '',
-        arn: config.arn || '',
-        path: config.path || '/',
-        createDate: config.createDate || '',
+        ...user,
+        hasAccessKey: iamDetails.hasAccessKey,
+        passwordLastUsed: iamDetails.passwordLastUsed,
       };
     })
-    .filter((user) => {
-      if (!matchesFilter(user.accountId, params.accountId)) return false;
-      if (!matchesFilter(user.region, params.region)) return false;
-      if (!matchesFilter(user.userName, params.userName)) return false;
-      return true;
-    });
+  );
+
+  return enrichedUsers.filter((user) => {
+    if (!matchesFilter(user.accountId, params.accountId)) return false;
+    if (!matchesFilter(user.region, params.region)) return false;
+    if (!matchesFilter(user.userName, params.userName)) return false;
+    return true;
+  });
 }
