@@ -1,11 +1,31 @@
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #ffffff;
+  --foreground: #1a1a1a;
   --primary: #3b82f6;
   --primary-hover: #2563eb;
-  --border: #333;
-  --card-bg: #111;
-  --input-bg: #1a1a1a;
+  --border: #e5e5e5;
+  --card-bg: #f9f9f9;
+  --input-bg: #ffffff;
+  --text-muted: #666666;
+  --text-secondary: #888888;
+  --hover-bg: #f5f5f5;
+  --disabled-bg: #cccccc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --border: #333;
+    --card-bg: #111;
+    --input-bg: #1a1a1a;
+    --text-muted: #aaa;
+    --text-secondary: #888;
+    --hover-bg: #1a1a1a;
+    --disabled-bg: #555;
+  }
 }
 
 * {
@@ -53,7 +73,7 @@ a:hover {
 }
 
 .header > p {
-  color: #888;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   margin-bottom: 1rem;
 }
@@ -67,7 +87,7 @@ a:hover {
 }
 
 .description p {
-  color: #aaa;
+  color: var(--text-muted);
   font-size: 0.85rem;
   line-height: 1.6;
   margin: 0;
@@ -89,7 +109,7 @@ a:hover {
   padding: 0.5rem 1rem;
   border: none;
   background: transparent;
-  color: #888;
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.95rem;
   border-radius: 4px;
@@ -97,7 +117,7 @@ a:hover {
 }
 
 .tab:hover {
-  background: var(--input-bg);
+  background: var(--hover-bg);
   color: var(--foreground);
 }
 
@@ -108,13 +128,19 @@ a:hover {
 
 .search-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
   padding: 1.5rem;
   background: var(--card-bg);
   border-radius: 8px;
   border: 1px solid var(--border);
+}
+
+@media (min-width: 768px) {
+  .search-form {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .form-group {
@@ -125,27 +151,33 @@ a:hover {
 
 .form-group label {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: var(--input-bg);
+  background: var(--hover-bg);
   color: var(--foreground);
   font-size: 0.9rem;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
   outline: none;
   border-color: var(--primary);
 }
 
 .form-group input::placeholder {
-  color: #666;
+  color: var(--text-muted);
+}
+
+.form-group select {
+  cursor: pointer;
 }
 
 .button-group {
@@ -173,18 +205,18 @@ a:hover {
 }
 
 .btn-primary:disabled {
-  background: #555;
+  background: var(--disabled-bg);
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  background: var(--input-bg);
+  background: var(--hover-bg);
   color: var(--foreground);
   border: 1px solid var(--border);
 }
 
 .btn-secondary:hover {
-  background: #222;
+  background: var(--hover-bg);
 }
 
 .results-header {
@@ -196,7 +228,7 @@ a:hover {
 
 .results-count {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .table-container {
@@ -221,7 +253,7 @@ td {
 th {
   background: var(--card-bg);
   font-weight: 600;
-  color: #888;
+  color: var(--text-secondary);
   text-transform: uppercase;
   font-size: 0.7rem;
   letter-spacing: 0.5px;
@@ -234,7 +266,7 @@ th.sortable {
 }
 
 th.sortable:hover {
-  background: var(--input-bg);
+  background: var(--hover-bg);
   color: var(--foreground);
 }
 
@@ -274,7 +306,7 @@ tr:last-child td {
   justify-content: center;
   align-items: center;
   padding: 3rem;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .spinner {
@@ -304,7 +336,7 @@ tr:last-child td {
 .empty {
   padding: 3rem;
   text-align: center;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .monospace {

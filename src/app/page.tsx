@@ -74,6 +74,8 @@ interface IAMUser {
   userId: string;
   arn: string;
   createDate: string;
+  hasAccessKey: string;
+  passwordLastUsed: string;
 }
 
 type TabType = 'ec2' | 'vpc' | 'rds' | 'lambda' | 'lb' | 'eni' | 's3' | 'iam';
@@ -1068,14 +1070,11 @@ export default function Home() {
                       <th className="sortable" onClick={() => handleSort('accountId')}>
                         Account ID {sortKey === 'accountId' && (sortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="sortable" onClick={() => handleSort('region')}>
-                        Region {sortKey === 'region' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      <th className="sortable" onClick={() => handleSort('hasAccessKey')}>
+                        Access Key {sortKey === 'hasAccessKey' && (sortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="sortable" onClick={() => handleSort('userId')}>
-                        User ID {sortKey === 'userId' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </th>
-                      <th className="sortable" onClick={() => handleSort('arn')}>
-                        ARN {sortKey === 'arn' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      <th className="sortable" onClick={() => handleSort('passwordLastUsed')}>
+                        Last Login {sortKey === 'passwordLastUsed' && (sortOrder === 'asc' ? '↑' : '↓')}
                       </th>
                       <th className="sortable" onClick={() => handleSort('createDate')}>
                         Create Date {sortKey === 'createDate' && (sortOrder === 'asc' ? '↑' : '↓')}
@@ -1087,9 +1086,8 @@ export default function Home() {
                       <tr key={`${user.accountId}-${user.userName}`}>
                         <td>{user.userName}</td>
                         <td className="monospace">{user.accountId}</td>
-                        <td>{user.region}</td>
-                        <td className="monospace">{user.userId}</td>
-                        <td className="monospace">{user.arn}</td>
+                        <td>{user.hasAccessKey}</td>
+                        <td>{user.passwordLastUsed}</td>
                         <td>{user.createDate}</td>
                       </tr>
                     ))}
