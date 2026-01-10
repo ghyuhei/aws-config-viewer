@@ -489,7 +489,7 @@ export default function Home() {
         <h1>AWS Config Viewer</h1>
         <p>Search resources across multiple AWS accounts using AWS Config</p>
         <div className="description">
-          <p>Search EC2, VPC, RDS, Lambda, Load Balancer, Network Interface, S3, and IAM User resources recorded in AWS Config Aggregator.</p>
+          <p>Search EC2, Network Interface, Lambda, Load Balancer, VPC, RDS, S3, and IAM User resources recorded in AWS Config Aggregator.</p>
           <p>Leave search fields empty to display all resources. Partial matching is supported.</p>
         </div>
       </header>
@@ -498,11 +498,8 @@ export default function Home() {
         <button className={`tab ${activeTab === 'ec2' ? 'active' : ''}`} onClick={() => setActiveTab('ec2')}>
           EC2 Instances
         </button>
-        <button className={`tab ${activeTab === 'vpc' ? 'active' : ''}`} onClick={() => setActiveTab('vpc')}>
-          VPCs
-        </button>
-        <button className={`tab ${activeTab === 'rds' ? 'active' : ''}`} onClick={() => setActiveTab('rds')}>
-          RDS Instances
+        <button className={`tab ${activeTab === 'eni' ? 'active' : ''}`} onClick={() => setActiveTab('eni')}>
+          Network Interfaces
         </button>
         <button className={`tab ${activeTab === 'lambda' ? 'active' : ''}`} onClick={() => setActiveTab('lambda')}>
           Lambda Functions
@@ -510,8 +507,11 @@ export default function Home() {
         <button className={`tab ${activeTab === 'lb' ? 'active' : ''}`} onClick={() => setActiveTab('lb')}>
           Load Balancers
         </button>
-        <button className={`tab ${activeTab === 'eni' ? 'active' : ''}`} onClick={() => setActiveTab('eni')}>
-          Network Interfaces
+        <button className={`tab ${activeTab === 'vpc' ? 'active' : ''}`} onClick={() => setActiveTab('vpc')}>
+          VPCs
+        </button>
+        <button className={`tab ${activeTab === 'rds' ? 'active' : ''}`} onClick={() => setActiveTab('rds')}>
+          RDS Instances
         </button>
         <button className={`tab ${activeTab === 's3' ? 'active' : ''}`} onClick={() => setActiveTab('s3')}>
           S3 Buckets
